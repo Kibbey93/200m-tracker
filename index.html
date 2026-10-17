@@ -213,12 +213,14 @@
   }
 
   function parseHiscores(text) {
-    const lines = text.trim().split(/\r?\n/);
-    if (lines.length < SKILLS.length + 1 || !/^-?\d+,-?\d+,-?\d+$/.test(lines[0].trim())) {
+    // Entries are normally one per line, but copy/paste can collapse them onto one line.
+    const lines = text.trim().split(/\s+/);
+    const triple = /^-?\d+,-?\d+,-?\d+$/;
+    if (lines.length < SKILLS.length + 1 || !lines.slice(0, SKILLS.length + 1).every(l => triple.test(l))) {
       throw new Error("Unexpected response format");
     }
     return SKILLS.map((name, i) => {
-      const [, level, xp] = lines[i + 1].trim().split(",").map(Number);
+      const [, level, xp] = lines[i + 1].split(",").map(Number);
       const realXp = Math.max(0, xp);
       return {
         order: i, name,
