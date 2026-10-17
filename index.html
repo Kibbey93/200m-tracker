@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RS3 200m Tracker</title>
+<style>
+  :root {
+    --bg: #14171c;
+    --panel: #1d2128;
+    --panel-2: #252a33;
+    --border: #333a46;
+    --text: #e6e8eb;
+    --muted: #9aa3b0;
+    --accent: #e0b545;
+    --good: #5cc98a;
+    --bad: #e06c6c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+
+  .search {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px;
+  }
+  input, select, button {
+    font: inherit; color: var(--text);
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 10px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  #username { flex: 1 1 200px; min-width: 0; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: #1a1a1a; border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .link { background: none; border: none; color: var(--muted); text-decoration: underline; padding: 4px; }
+
+  #status { min-height: 20px; margin: 10px 2px; color: var(--muted); }
+  #status.error { color: var(--bad); }
+  #status.ok { color: var(--good); }
+
+  details.manual {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 16px;
+  }
+  details.manual summary { cursor: pointer; color: var(--muted); }
+  details.manual textarea {
+    width: 100%; min-height: 120px; margin: 8px 0;
+    font: 12px ui-monospace, monospace; color: var(--text);
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px;
+  }
+  details.manual p { color: var(--muted); margin: 8px 0; }
+  details.manual code { word-break: break-all; }
+
+  .summary {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
+    margin-bottom: 16px;
+  }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .card .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .card .v { font-size: 20px; font-weight: 600; margin-top: 2px; }
+  .card input { width: 80px; margin-top: 4px; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); min-width: 760px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { background: var(--panel-2); color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; cursor: pointer; user-select: none; }
+  th.sorted::after { content: " ▾"; }
+  th.sorted.asc::after { content: " ▴"; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.skill { font-weight: 600; }
+  td input.rate { width: 110px; text-align: right; }
+  .bar { height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; width: 120px; display: inline-block; vertical-align: middle; }
+  .bar > i { display: block; height: 100%; background: var(--accent); }
+  .pct { display: inline-block; width: 52px; text-align: right; margin-left: 6px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .maxed { color: var(--good); font-weight: 600; }
+  .dim { color: var(--muted); }
+  footer { margin-top: 24px; color: var(--muted); font-size: 12px; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>RS3 <span>200m</span> Tracker</h1>
+  <p class="sub">Look up your RuneScape 3 stats, enter your XP/hour for each skill, and see how long until 200m.</p>
+
+  <form class="search" id="searchForm">
+    <input id="username" placeholder="RuneScape username" autocomplete="off" maxlength="12" required>
+    <select id="mode" title="Hiscore type">
+      <option value="hiscore">Normal</option>
+      <option value="hiscore_ironman">Ironman</option>
+      <option value="hiscore_hardcore_ironman">Hardcore Ironman</option>
+    </select>
+    <button class="primary" id="lookupBtn" type="submit">Look up</button>
+  </form>
+  <div id="status"></div>
+
+  <details class="manual">
+    <summary>Lookup not working? Paste your hiscores manually</summary>
+    <p>Open this link in a new tab, copy everything on the page, and paste it below:<br>
+      <a id="rawLink" href="#" target="_blank" rel="noopener"><code id="rawLinkText"></code></a></p>
+    <textarea id="manualInput" placeholder="1234,2898,5600000000&#10;..."></textarea>
+    <button type="button" id="manualBtn">Load pasted stats</button>
+    <p>Have your own CORS proxy (e.g. a Cloudflare Worker)? Enter its URL prefix; the hiscores URL is appended, URL-encoded.</p>
+    <input id="customProxy" placeholder="https://my-worker.example.workers.dev/?url=" style="width:100%">
+  </details>
+
+  <div id="results" hidden>
+    <div class="summary">
+      <div class="card"><div class="k">Player</div><div class="v" id="sumPlayer">–</div></div>
+      <div class="card"><div class="k">Skills at 200m</div><div class="v" id="sumMaxed">–</div></div>
+      <div class="card"><div class="k">XP remaining</div><div class="v" id="sumRemaining">–</div></div>
+      <div class="card"><div class="k">Total time (rates entered)</div><div class="v" id="sumTime">–</div></div>
+      <div class="card">
+        <div class="k">Hours played per day</div>
+        <input id="hoursPerDay" type="number" min="0.5" max="24" step="0.5" value="4">
+        <div class="dim" id="sumDays" style="margin-top:4px"></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="order">Skill</th>
+            <th data-sort="level" class="num">Level</th>
+            <th data-sort="xp" class="num">XP</th>
+            <th data-sort="pct">Progress</th>
+            <th data-sort="remaining" class="num">XP to 200m</th>
+            <th class="num" data-sort="rate">XP / hour</th>
+            <th data-sort="hours" class="num">Hours left</th>
+            <th data-sort="hours" class="num">Days at <span id="hpdLabel">4</span>h/day</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    Data from the official RuneScape hiscores. XP/hour rates are saved in your browser.
+    The hiscores don't allow direct browser requests, so lookups go through a public CORS proxy.
+  </footer>
+</div>
+
+<script>
+(() => {
+  const MAX_XP = 200_000_000;
+  // Order matches the RS3 index_lite hiscores response (after the Overall line).
+  const SKILLS = [
+    "Attack", "Defence", "Strength", "Constitution", "Ranged", "Prayer", "Magic",
+    "Cooking", "Woodcutting", "Fletching", "Fishing", "Firemaking", "Crafting",
+    "Smithing", "Mining", "Herblore", "Agility", "Thieving", "Slayer", "Farming",
+    "Runecrafting", "Hunter", "Construction", "Summoning", "Dungeoneering",
+    "Divination", "Invention", "Archaeology", "Necromancy",
+  ];
+
+  // Public CORS proxies, tried in order. Each takes the target URL and returns a proxied URL.
+  const PROXIES = [
+    u => "https://corsproxy.io/?url=" + encodeURIComponent(u),
+    u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+    u => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u),
+  ];
+
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(key, fallback) {
+      try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+      catch { return fallback; }
+    },
+    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} },
+  };
+
+  let rates = store.get("rs200m.rates", {});
+  let rows = [];
+  let player = "";
+  let sort = store.get("rs200m.sort", { key: "order", asc: true });
+
+  const fmt = n => Math.round(n).toLocaleString();
+  const short = n => n >= 1e9 ? (n / 1e9).toFixed(2) + "b" : n >= 1e6 ? (n / 1e6).toFixed(1) + "m" : n >= 1e3 ? (n / 1e3).toFixed(0) + "k" : String(Math.round(n));
+  function fmtHours(h) {
+    if (!isFinite(h)) return "–";
+    if (h < 1) return Math.ceil(h * 60) + "m";
+    if (h < 100) return h.toFixed(1) + "h";
+    return fmt(h) + "h";
+  }
+  function fmtDays(d) {
+    if (!isFinite(d)) return "–";
+    if (d < 1) return "< 1 day";
+    if (d < 365) return Math.ceil(d) + " days";
+    return (d / 365).toFixed(1) + " years";
+  }
+
+  function hiscoreUrl(name, mode) {
+    return `https://secure.runescape.com/m=${mode}/index_lite.ws?player=${encodeURIComponent(name)}`;
+  }
+
+  function setStatus(msg, cls = "") {
+    const el = $("status");
+    el.textContent = msg;
+    el.className = cls;
+  }
+
+  function parseHiscores(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < SKILLS.length + 1 || !/^-?\d+,-?\d+,-?\d+$/.test(lines[0].trim())) {
+      throw new Error("Unexpected response format");
+    }
+    return SKILLS.map((name, i) => {
+      const [, level, xp] = lines[i + 1].trim().split(",").map(Number);
+      const realXp = Math.max(0, xp);
+      return {
+        order: i, name,
+        level: level > 0 ? level : 1,
+        xp: realXp,
+        remaining: Math.max(0, MAX_XP - realXp),
+        pct: Math.min(100, realXp / MAX_XP * 100),
+      };
+    });
+  }
+
+  async function fetchWithTimeout(url, ms = 10000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try { return await fetch(url, { signal: ctrl.signal, cache: "no-store" }); }
+    finally { clearTimeout(t); }
+  }
+
+  async function lookup(name, mode) {
+    const target = hiscoreUrl(name, mode);
+    const custom = $("customProxy").value.trim();
+    const attempts = custom ? [u => custom + encodeURIComponent(u), ...PROXIES] : PROXIES;
+    let notFound = false;
+    for (const proxy of attempts) {
+      try {
+        const res = await fetchWithTimeout(proxy(target));
+        const text = await res.text();
+        if (res.status === 404 || /<html|page not found/i.test(text)) { notFound = true; continue; }
+        if (!res.ok) continue;
+        return parseHiscores(text);
+      } catch { /* try next proxy */ }
+    }
+    throw new Error(notFound
+      ? `Couldn't find "${name}" on the ${$("mode").selectedOptions[0].text.toLowerCase()} hiscores. Check the spelling, or the player may not be ranked.`
+      : "Couldn't reach the hiscores through any proxy. Try again, or paste your stats manually below.");
+  }
+
+  function updateRawLink() {
+    const name = $("username").value.trim() || "YOUR_NAME";
+    const url = hiscoreUrl(name, $("mode").value);
+    $("rawLink").href = url;
+    $("rawLinkText").textContent = url;
+  }
+
+  function hoursFor(row) {
+    const rate = Number(rates[row.name]) || 0;
+    if (row.remaining === 0) return 0;
+    return rate > 0 ? row.remaining / rate : Infinity;
+  }
+
+  function render() {
+    const hpd = Math.max(0.5, Number($("hoursPerDay").value) || 4);
+    $("hpdLabel").textContent = hpd;
+
+    const sorted = [...rows].sort((a, b) => {
+      const val = r => sort.key === "hours" ? hoursFor(r)
+        : sort.key === "rate" ? (Number(rates[r.name]) || 0)
+        : sort.key === "order" ? r.order : r[sort.key];
+      let va = val(a), vb = val(b);
+      if (va === vb) return a.order - b.order;
+      // Keep skills without a rate at the bottom when sorting by time.
+      if (sort.key === "hours") {
+        if (!isFinite(va)) return 1;
+        if (!isFinite(vb)) return -1;
+      }
+      return (va < vb ? -1 : 1) * (sort.asc ? 1 : -1);
+    });
+
+    document.querySelectorAll("th[data-sort]").forEach(th => {
+      th.classList.toggle("sorted", th.dataset.sort === sort.key);
+      th.classList.toggle("asc", th.dataset.sort === sort.key && sort.asc);
+    });
+
+    const tbody = $("tbody");
+    tbody.innerHTML = "";
+    for (const r of sorted) {
+      const maxed = r.remaining === 0;
+      const hrs = hoursFor(r);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="skill">${r.name}</td>
+        <td class="num">${r.level}</td>
+        <td class="num">${fmt(r.xp)}</td>
+        <td><span class="bar"><i style="width:${r.pct}%"></i></span><span class="pct">${r.pct.toFixed(r.pct >= 99.95 && !maxed ? 2 : 1)}%</span></td>
+        <td class="num">${maxed ? '<span class="maxed">200m ✓</span>' : fmt(r.remaining)}</td>
+        <td class="num">${maxed ? '<span class="dim">–</span>' : ""}</td>
+        <td class="num hours">${maxed ? '<span class="maxed">Done</span>' : fmtHours(hrs)}</td>
+        <td class="num days">${maxed ? "" : fmtDays(hrs / hpd)}</td>`;
+      if (!maxed) {
+        const input = document.createElement("input");
+        input.className = "rate";
+        input.type = "number";
+        input.min = "0";
+        input.step = "1000";
+        input.placeholder = "XP/hr";
+        input.value = rates[r.name] || "";
+        input.setAttribute("aria-label", `${r.name} XP per hour`);
+        input.addEventListener("input", () => {
+          const v = Number(input.value);
+          if (v > 0) rates[r.name] = v; else delete rates[r.name];
+          store.set("rs200m.rates", rates);
+          const h = hoursFor(r);
+          tr.querySelector(".hours").textContent = fmtHours(h);
+          tr.querySelector(".days").textContent = fmtDays(h / hpd);
+          renderSummary();
+        });
+        tr.children[5].appendChild(input);
+      }
+      tbody.appendChild(tr);
+    }
+    renderSummary();
+  }
+
+  function renderSummary() {
+    const hpd = Math.max(0.5, Number($("hoursPerDay").value) || 4);
+    const maxed = rows.filter(r => r.remaining === 0).length;
+    const remaining = rows.reduce((s, r) => s + r.remaining, 0);
+    const pending = rows.filter(r => r.remaining > 0);
+    const withRate = pending.filter(r => isFinite(hoursFor(r)));
+    const total = withRate.reduce((s, r) => s + hoursFor(r), 0);
+
+    $("sumPlayer").textContent = player;
+    $("sumMaxed").textContent = `${maxed} / ${rows.length}`;
+    $("sumRemaining").textContent = short(remaining);
+    if (pending.length === 0) {
+      $("sumTime").textContent = "All 200m!";
+      $("sumDays").textContent = "";
+    } else {
+      $("sumTime").textContent = withRate.length ? fmtHours(total) : "–";
+      const missing = pending.length - withRate.length;
+      $("sumDays").textContent = withRate.length
+        ? `≈ ${fmtDays(total / hpd)}${missing ? ` · ${missing} skill${missing > 1 ? "s" : ""} without a rate` : ""}`
+        : "Enter XP/hour rates below";
+    }
+  }
+
+  function showResults(name, data) {
+    player = name;
+    rows = data;
+    $("results").hidden = false;
+    render();
+  }
+
+  $("searchForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("username").value.trim();
+    const mode = $("mode").value;
+    if (!name) return;
+    store.set("rs200m.user", { name, mode });
+    const url = new URL(location.href);
+    url.searchParams.set("player", name);
+    if (mode !== "hiscore") url.searchParams.set("mode", mode); else url.searchParams.delete("mode");
+    history.replaceState(null, "", url);
+
+    $("lookupBtn").disabled = true;
+    setStatus(`Looking up ${name}…`);
+    try {
+      showResults(name, await lookup(name, mode));
+      setStatus(`Loaded stats for ${name}.`, "ok");
+    } catch (err) {
+      setStatus(err.message, "error");
+    } finally {
+      $("lookupBtn").disabled = false;
+    }
+  });
+
+  $("manualBtn").addEventListener("click", () => {
+    try {
+      showResults($("username").value.trim() || "Pasted stats", parseHiscores($("manualInput").value));
+      setStatus("Loaded pasted stats.", "ok");
+    } catch {
+      setStatus("That doesn't look like hiscores data. Copy the whole page from the link above.", "error");
+    }
+  });
+
+  document.querySelectorAll("th[data-sort]").forEach(th => th.addEventListener("click", () => {
+    const key = th.dataset.sort;
+    sort = sort.key === key ? { key, asc: !sort.asc } : { key, asc: key === "order" || key === "hours" };
+    store.set("rs200m.sort", sort);
+    render();
+  }));
+
+  $("hoursPerDay").addEventListener("input", () => {
+    store.set("rs200m.hpd", $("hoursPerDay").value);
+    if (rows.length) render();
+  });
+  $("customProxy").addEventListener("change", () => store.set("rs200m.proxy", $("customProxy").value.trim()));
+  $("username").addEventListener("input", updateRawLink);
+  $("mode").addEventListener("change", updateRawLink);
+
+  // Restore saved state; a ?player= link takes priority and looks up immediately.
+  const params = new URLSearchParams(location.search);
+  const saved = store.get("rs200m.user", null);
+  $("hoursPerDay").value = store.get("rs200m.hpd", "4");
+  $("customProxy").value = store.get("rs200m.proxy", "");
+  if (params.get("player")) {
+    $("username").value = params.get("player");
+    $("mode").value = params.get("mode") || "hiscore";
+    updateRawLink();
+    $("searchForm").requestSubmit();
+  } else {
+    if (saved) { $("username").value = saved.name; $("mode").value = saved.mode; }
+    updateRawLink();
+  }
+})();
+</script>
+</body>
+</html>
