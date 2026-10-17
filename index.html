@@ -68,7 +68,7 @@
   }
   .btn:hover { background: #ffe3c2; }
   .btn:disabled { opacity: .5; cursor: wait; }
-  .goal-pick { display: flex; align-items: center; gap: .5em; color: var(--muted); font-size: .9em; margin-left: auto; }
+  .goal-pick { display: flex; align-items: center; gap: .5em; color: var(--muted); font-size: .9em; margin-left: .5em; }
 
   main { flex-grow: 1; padding: 1em; width: 100%; max-width: 1240px; margin: 0 auto; }
   .sub { color: var(--muted); margin: 0 0 .75em; font-size: .9em; }
@@ -86,6 +86,15 @@
     padding: .6em 1em; font-size: 1em;
   }
   .section-box-content { padding: .75em 1em; }
+  .section-box-header.with-tools { display: flex; align-items: center; justify-content: space-between; gap: 1em; }
+  .toggle {
+    display: inline-flex; align-items: center; gap: .4em; cursor: pointer; user-select: none;
+    font: 300 .8em "IBM Plex Sans", sans-serif; color: #a7a7a7;
+    border: 1px solid var(--border); border-radius: 2px; padding: .2em .6em;
+  }
+  .toggle:hover { color: #cdcdcd; }
+  .toggle input { display: none; }
+  .toggle:has(input:checked) { background: var(--button-bg); border-color: var(--button-border); color: var(--button-text); font-weight: 600; }
 
   details.manual > summary { cursor: pointer; list-style: none; }
   details.manual > summary::before { content: "▸ "; color: var(--accent); }
@@ -191,7 +200,10 @@
     </div>
 
     <div class="section-box">
-      <h2 class="section-box-header">Skills</h2>
+      <div class="section-box-header with-tools">
+        <h2 style="font-size:1em">Skills</h2>
+        <label class="toggle" title="Hide skills that have reached the goal"><input type="checkbox" id="hideDone">Hide completed</label>
+      </div>
       <div class="section-box-content table-wrap">
         <table>
           <thead>
@@ -256,6 +268,7 @@
     if (typeof r === "number") rates[k] = r >= 1e6 ? { v: r / 1e6, u: "M" } : { v: r / 1e3, u: "K" };
   }
   let globalGoal = store.get("rs200m.goal", "200m");
+  let hideDone = store.get("rs200m.hideDone", false);
   let rows = [];
   let player = "";
   let sort = store.get("rs200m.sort", { key: "order", asc: true });
@@ -392,6 +405,7 @@
     for (const r of sorted) {
       const { remaining, pct } = progress(r);
       const done = remaining === 0;
+      if (done && hideDone) continue;
       const hrs = hoursFor(r);
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -506,6 +520,12 @@
     render();
   }));
 
+  $("hideDone").checked = hideDone;
+  $("hideDone").addEventListener("change", () => {
+    hideDone = $("hideDone").checked;
+    store.set("rs200m.hideDone", hideDone);
+    if (rows.length) render();
+  });
   $("globalGoal").value = globalGoal;
   $("globalGoal").addEventListener("change", () => {
     globalGoal = $("globalGoal").value;
