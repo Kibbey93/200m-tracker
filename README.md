@@ -2,12 +2,11 @@
 
 A single-page site that looks up a RuneScape 3 player on the official hiscores and,
 given your XP/hour for each skill, tells you how long until each one reaches your goal
-(level 99, 110, 120 or 200m XP).
+(level 99, level 120 or 200m XP).
 
 - Search by username (Normal, Ironman or Hardcore Ironman hiscores)
-- Pick a global goal (99, 120 or 200m) and override it per skill (99, 110, 120 or 200m);
-  Invention uses its elite XP curve
-- Enter an XP/hour rate per skill in K or M; rates and goals are saved in your browser
+- Pick a goal (level 99, level 120 or 200m XP); Invention uses its elite XP curve
+- Enter an XP/hour rate per skill in K or M; rates are saved in your browser
 - Per-skill hours left, days left at your chosen hours/day, and totals
 - Click column headers to sort (e.g. by hours left)
 - Shareable links: `index.html?player=YourName`

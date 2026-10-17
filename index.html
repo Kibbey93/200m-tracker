@@ -72,7 +72,7 @@
   .card input { width: 80px; margin-top: 4px; }
 
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
-  table { width: 100%; border-collapse: collapse; background: var(--panel); min-width: 900px; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); min-width: 800px; }
   th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
   th { background: var(--panel-2); color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; cursor: pointer; user-select: none; }
   th.sorted::after { content: " ▾"; }
@@ -107,7 +107,7 @@
     </select>
     <button class="primary" id="lookupBtn" type="submit">Look up</button>
     <label class="goal-pick">Goal
-      <select id="globalGoal" title="Goal for every skill without its own goal">
+      <select id="globalGoal" title="Goal for every skill">
         <option value="99">Level 99</option>
         <option value="120">Level 120</option>
         <option value="200m">200m XP</option>
@@ -147,7 +147,6 @@
             <th data-sort="level" class="num">Level</th>
             <th data-sort="xp" class="num">XP</th>
             <th data-sort="pct">Progress</th>
-            <th data-sort="target">Goal</th>
             <th data-sort="remaining" class="num">XP to goal</th>
             <th class="num" data-sort="rate">XP / hour</th>
             <th data-sort="hours" class="num">Hours left</th>
@@ -177,8 +176,7 @@
     "Divination", "Invention", "Archaeology", "Necromancy",
   ];
   // Invention is an elite skill with its own XP curve.
-  const ELITE_XP = { 99: 36_073_511, 110: 56_412_678, 120: 80_618_654 };
-  const GOAL_LABELS = { "99": "99", "110": "110", "120": "120", "200m": "200m" };
+  const ELITE_XP = { 99: 36_073_511, 120: 80_618_654 };
 
   // Public CORS proxies, tried in order. Each takes the target URL and returns a proxied URL.
   const PROXIES = [
@@ -201,7 +199,6 @@
   for (const [k, r] of Object.entries(rates)) {
     if (typeof r === "number") rates[k] = r >= 1e6 ? { v: r / 1e6, u: "M" } : { v: r / 1e3, u: "K" };
   }
-  let skillGoals = store.get("rs200m.goals", {});
   let globalGoal = store.get("rs200m.goal", "200m");
   let rows = [];
   let player = "";
@@ -232,9 +229,8 @@
     if (goal === "200m") return MAX_XP;
     return skill === "Invention" ? ELITE_XP[goal] : levelXp(Number(goal));
   }
-  const goalOf = r => skillGoals[r.name] || globalGoal;
   function progress(r) {
-    const target = goalXp(r.name, goalOf(r));
+    const target = goalXp(r.name, globalGoal);
     return { target, remaining: Math.max(0, target - r.xp), pct: Math.min(100, r.xp / target * 100) };
   }
   function rateXp(name) {
@@ -347,21 +343,10 @@
         <td class="num">${r.level}</td>
         <td class="num">${fmt(r.xp)}</td>
         <td><span class="bar"><i style="width:${pct}%"></i></span><span class="pct">${pct.toFixed(pct >= 99.95 && !done ? 2 : 1)}%</span></td>
-        <td class="goal"></td>
         <td class="num">${done ? '<span class="maxed">Reached ✓</span>' : fmt(remaining)}</td>
         <td class="num">${done ? '<span class="dim">–</span>' : ""}</td>
         <td class="num hours">${done ? '<span class="maxed">Done</span>' : fmtHours(hrs)}</td>
         <td class="num days">${done ? "" : fmtDays(hrs / hpd)}</td>`;
-
-      const goalSel = makeSelect(
-        [["", `Global (${GOAL_LABELS[globalGoal]})`], ["99", "99"], ["110", "110"], ["120", "120"], ["200m", "200m"]],
-        skillGoals[r.name] || "", `${r.name} goal`);
-      goalSel.addEventListener("change", () => {
-        if (goalSel.value) skillGoals[r.name] = goalSel.value; else delete skillGoals[r.name];
-        store.set("rs200m.goals", skillGoals);
-        render();
-      });
-      tr.children[4].appendChild(goalSel);
 
       if (!done) {
         const rate = rates[r.name] || { v: "", u: "K" };
@@ -388,7 +373,7 @@
         input.addEventListener("input", update);
         unit.addEventListener("change", update);
         wrap.append(input, unit);
-        tr.children[6].appendChild(wrap);
+        tr.children[5].appendChild(wrap);
       }
       tbody.appendChild(tr);
     }
@@ -459,7 +444,6 @@
   });
 
   document.querySelectorAll("th[data-sort]").forEach(th => th.addEventListener("click", e => {
-    if (e.target.closest("select, input")) return;
     const key = th.dataset.sort;
     sort = sort.key === key ? { key, asc: !sort.asc } : { key, asc: key === "order" || key === "hours" };
     store.set("rs200m.sort", sort);
