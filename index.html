@@ -160,7 +160,7 @@
 
   <footer>
     Data from the official RuneScape hiscores. XP/hour rates are saved in your browser.
-    The hiscores don't allow direct browser requests, so lookups go through a public CORS proxy.
+    The hiscores don't allow direct browser requests, so lookups go through a small Cloudflare Worker proxy.
   </footer>
 </div>
 
@@ -178,8 +178,10 @@
   // Invention is an elite skill with its own XP curve.
   const ELITE_XP = { 99: 36_073_511, 120: 80_618_654 };
 
-  // Public CORS proxies, tried in order. Each takes the target URL and returns a proxied URL.
+  // CORS proxies, tried in order: our own Cloudflare Worker first, then public fallbacks.
+  // Each takes the target URL and returns a proxied URL.
   const PROXIES = [
+    u => "https://rs-hiscores.michaelkibbey.workers.dev/?url=" + encodeURIComponent(u),
     u => "https://corsproxy.io/?url=" + encodeURIComponent(u),
     u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
     u => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u),

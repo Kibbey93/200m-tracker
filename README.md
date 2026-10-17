@@ -21,10 +21,10 @@ given your XP/hour for each skill, tells you how long until each one reaches you
 ## About the lookup
 
 The RuneScape hiscores don't send CORS headers, so a browser page can't call them
-directly. The page tries a few public CORS proxies in turn (corsproxy.io,
-allorigins, codetabs). If they're all down, open the "Lookup not working?" panel to
-paste your hiscores manually, or point it at your own proxy, for example this
-Cloudflare Worker (free tier is plenty):
+directly. Lookups go through a Cloudflare Worker
+(`rs-hiscores.michaelkibbey.workers.dev`) running the script below, with a few public
+CORS proxies as fallbacks. If everything fails, open the "Lookup not working?" panel to
+paste your hiscores manually or enter a different proxy.
 
 ```js
 export default {
