@@ -4,194 +4,219 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RS3 200m Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500&family=PT+Serif:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  /* Palette modelled on the RuneScape Wiki dark theme. */
+  /* Palette and type follow the RuneScape Wiki's Grand Exchange prices site. */
   :root {
-    --bg: #071022;
-    --header: #0b1a33;
-    --panel: #172136;
-    --panel-2: #1e2a42;
-    --th: #222e45;
-    --row-alt: #1a2439;
-    --row-hover: #26344f;
-    --border: #2f3d5a;
-    --text: #cbd9f4;
-    --heading: #e8eefb;
-    --muted: #8a9bbd;
-    --link: #8bb4f0;
-    --accent: #e7c35a;
-    --good: #4fbf6a;
-    --bad: #e4605e;
+    --bg: #343434;
+    --text: #fff;
+    --border: #70614f;
+    --accent: #f0c572;
+    --muted: #c7c7c7;
+    --header: #54524a;
+    --table-bg: #212121;
+    --table-hover: #343434;
+    --button-bg: #ffd7a8;
+    --button-text: #000;
+    --button-border: #b39676;
+    --success: #81ff81;
+    --danger: #ff8181;
   }
   * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 15px/1.45 "IBM Plex Sans", sans-serif;
+    display: flex; flex-direction: column; min-height: 100vh;
   }
-  a { color: var(--link); }
+  h1, h2 { margin: 0; font-family: "PT Serif", serif; }
+  a { color: var(--accent); font-weight: 500; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .mono { font-family: "JetBrains Mono", monospace; font-size: .92em; }
 
-  header.top {
+  #main-header {
     background: var(--header);
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+    border-bottom: 3px solid var(--accent);
+    padding: .5em 1em;
+    display: flex; flex-wrap: wrap; align-items: center; gap: .5em 1.5em;
   }
-  header .bar-inner {
-    max-width: 1240px; margin: 0 auto; padding: 10px 16px;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px;
+  .brand { display: flex; align-items: center; gap: .5em; color: var(--text); text-decoration: none; text-shadow: 2px 2px #00000030; }
+  .brand:hover { text-decoration: none; }
+  .brand img { width: 30px; height: 30px; object-fit: contain; }
+  .brand h1 { font-size: 1.1em; }
+  .brand h1 span { color: var(--accent); }
+
+  .search { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; flex: 1 1 480px; }
+  input, select {
+    font: inherit; font-size: .9em; color: var(--text);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: .2em; height: 30px; padding: .25em .5em;
   }
-  .brand { display: flex; align-items: center; gap: 10px; color: var(--heading); text-decoration: none; }
-  .brand img { width: 28px; height: 28px; }
-  .brand b { font-size: 18px; font-weight: 700; letter-spacing: .01em; }
-  .brand b span { color: var(--accent); }
-
-  .search { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1 1 520px; }
-  input, select, button {
-    font: inherit; color: var(--text);
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 4px; padding: 6px 10px; height: 34px;
+  input::placeholder { color: #9a9a9a; }
+  input:focus, select:focus { outline: 1px solid var(--accent); outline-offset: 0; }
+  #username { width: 300px; max-width: 100%; flex: 0 1 300px; }
+  .btn {
+    font: inherit; font-size: .9em; font-weight: 600;
+    background: var(--button-bg); color: var(--button-text);
+    border: 0; border-bottom: 4px solid var(--button-border); border-radius: .2em;
+    padding: .25em .7em .12em; height: 30px; cursor: pointer;
+    transition: background .1s ease-in-out;
   }
-  input::placeholder { color: var(--muted); }
-  input:focus, select:focus { outline: none; border-color: var(--link); box-shadow: 0 0 0 2px rgba(139, 180, 240, .25); }
-  #username { flex: 1 1 200px; min-width: 0; }
-  button { cursor: pointer; }
-  button:hover { background: var(--panel-2); }
-  button.primary { background: #2f6ec4; border-color: #3b7fd8; color: #fff; font-weight: 600; }
-  button.primary:hover { background: #3b7fd8; }
-  button:disabled { opacity: .6; cursor: wait; }
-  .goal-pick { display: flex; align-items: center; gap: 6px; color: var(--muted); margin-left: auto; }
+  .btn:hover { background: #ffe3c2; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .goal-pick { display: flex; align-items: center; gap: .5em; color: var(--muted); font-size: .9em; margin-left: auto; }
 
-  .wrap { max-width: 1240px; margin: 0 auto; padding: 16px 16px 48px; }
-  .sub { color: var(--muted); margin: 0 0 12px; }
-
-  #status { min-height: 20px; margin: 0 2px 10px; color: var(--muted); }
+  main { flex-grow: 1; padding: 1em; width: 100%; max-width: 1240px; margin: 0 auto; }
+  .sub { color: var(--muted); margin: 0 0 .75em; font-size: .9em; }
+  #status { margin: 0 0 .75em; color: var(--accent); font-weight: 300; }
   #status:empty { display: none; }
-  #status.error { color: var(--bad); }
-  #status.ok { color: var(--good); }
+  #status.error { color: var(--danger); }
+  #status.ok { color: var(--success); }
 
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; }
-  details.manual { padding: 8px 12px; margin-bottom: 16px; }
-  details.manual summary { cursor: pointer; color: var(--muted); }
-  details.manual textarea {
-    width: 100%; min-height: 110px; margin: 8px 0;
-    font: 12px ui-monospace, monospace; color: var(--text);
-    background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 8px;
+  .section-box {
+    background: var(--header); border: 1px solid var(--border); border-radius: .2em;
+    box-shadow: 0 0 5px 2px #00000030; margin-bottom: 1em;
   }
-  details.manual p { color: var(--muted); margin: 8px 0; }
+  .section-box-header {
+    background: var(--bg); border-bottom: 1px solid var(--border); border-radius: .2em .2em 0 0;
+    padding: .6em 1em; font-size: 1em;
+  }
+  .section-box-content { padding: .75em 1em; }
+
+  details.manual > summary { cursor: pointer; list-style: none; }
+  details.manual > summary::before { content: "▸ "; color: var(--accent); }
+  details.manual[open] > summary::before { content: "▾ "; }
+  details.manual:not([open]) > summary { border-bottom: 0; border-radius: .2em; }
+  details.manual textarea {
+    width: 100%; min-height: 110px; margin: .5em 0;
+    font: 12px "JetBrains Mono", monospace; color: var(--text);
+    background: var(--table-bg); border: 1px solid var(--border); border-radius: .2em; padding: .5em;
+  }
+  details.manual p { color: var(--muted); margin: .5em 0; font-size: .9em; }
   details.manual code { word-break: break-all; }
 
-  .summary {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
-    margin-bottom: 16px;
-  }
-  .card { padding: 10px 14px; border-top: 3px solid var(--th); }
-  .card.hl { border-top-color: var(--accent); }
-  .card .k { color: var(--muted); font-size: 12px; }
-  .card .v { font-size: 20px; font-weight: 700; color: var(--heading); margin-top: 2px; }
-  .card input { width: 80px; margin-top: 4px; }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75em; }
+  .stat { background: var(--table-bg); border: 1px solid var(--border); border-radius: .2em; padding: .5em .75em; }
+  .stat .k { color: var(--accent); font-weight: 300; font-size: .85em; }
+  .stat .v { font-family: "PT Serif", serif; font-size: 1.35em; font-weight: 700; margin-top: .1em; }
+  .stat input { width: 80px; margin-top: .25em; }
+  .stat .dim { font-size: .85em; }
 
   .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; min-width: 800px; }
-  th, td { padding: 6px 10px; text-align: left; white-space: nowrap; }
-  td { border-top: 1px solid var(--border); height: 42px; }
-  tbody tr:nth-child(even) { background: var(--row-alt); }
-  tbody tr:hover { background: var(--row-hover); }
-  th { background: var(--th); color: var(--heading); font-weight: 600; cursor: pointer; user-select: none; }
-  th:hover { background: var(--panel-2); }
-  th.sorted::after { content: " ▾"; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; background: var(--table-bg); min-width: 820px; }
+  thead { background: var(--bg); white-space: nowrap; }
+  th { color: var(--accent); font-weight: 300; text-align: left; cursor: pointer; user-select: none; }
+  th:hover { color: #ffe0a3; }
+  th.sorted::after { content: " ▾"; }
   th.sorted.asc::after { content: " ▴"; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  td.skill { font-weight: 600; color: var(--heading); }
-  td.skill img { width: 20px; height: 20px; object-fit: contain; vertical-align: -5px; margin-right: 8px; }
-  td input.rate { width: 80px; text-align: right; height: 30px; padding: 4px 8px; }
-  td select { height: 30px; padding: 4px 6px; }
-  .rate-wrap { display: inline-flex; gap: 4px; }
-  .bar { height: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; width: 120px; display: inline-block; vertical-align: middle; }
-  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #c99a2e, var(--accent)); }
-  .pct { display: inline-block; width: 52px; text-align: right; margin-left: 6px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .maxed { color: var(--good); font-weight: 600; }
+  th, td { border: 1px solid var(--border); padding: .25em .5em; white-space: nowrap; }
+  td { height: 38px; }
+  tbody tr:hover { background: var(--table-hover); }
+  td.num, th.num { text-align: right; }
+  td.skill img { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: .5em; }
+  td input.rate { width: 80px; text-align: right; }
+  td select { padding: .25em .3em; }
+  .rate-wrap { display: inline-flex; gap: .25em; }
+  .bar { height: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: .2em; overflow: hidden; width: 120px; display: inline-block; vertical-align: middle; }
+  .bar > i { display: block; height: 100%; background: var(--accent); }
+  .pct { display: inline-block; width: 60px; text-align: right; margin-left: .4em; color: var(--muted); }
+  .maxed { color: var(--success); font-weight: 500; }
   .dim { color: var(--muted); }
-  footer { margin-top: 20px; color: var(--muted); font-size: 12px; }
+
+  footer {
+    background: var(--header); border-top: 3px solid var(--accent);
+    padding: .75em 1.5em; font-size: .8em; font-weight: 200; margin-top: 3em;
+  }
+  footer p { margin: 0; max-width: 1240px; }
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="bar-inner">
-    <a class="brand" href="./">
-      <img src="https://runescape.wiki/images/Stats.png" alt="" onerror="this.remove()">
-      <b>RS3 <span>200m</span> Tracker</b>
-    </a>
-    <form class="search" id="searchForm">
-      <input id="username" placeholder="Search a RuneScape username…" autocomplete="off" maxlength="12" required>
-      <select id="mode" title="Hiscore type">
-        <option value="hiscore">Normal</option>
-        <option value="hiscore_ironman">Ironman</option>
-        <option value="hiscore_hardcore_ironman">Hardcore Ironman</option>
+<nav id="main-header">
+  <a class="brand" href="./">
+    <img src="https://runescape.wiki/images/Stats.png" alt="" onerror="this.remove()">
+    <h1>RS3 <span>200m</span> Tracker</h1>
+  </a>
+  <form class="search" id="searchForm">
+    <input id="username" placeholder="Search for a player..." autocomplete="off" maxlength="12" required>
+    <select id="mode" title="Hiscore type">
+      <option value="hiscore">Normal</option>
+      <option value="hiscore_ironman">Ironman</option>
+      <option value="hiscore_hardcore_ironman">Hardcore Ironman</option>
+    </select>
+    <button class="btn" id="lookupBtn" type="submit">Look up</button>
+    <label class="goal-pick">Goal
+      <select id="globalGoal" title="Goal for every skill">
+        <option value="99">Level 99</option>
+        <option value="120">Level 120</option>
+        <option value="200m">200m XP</option>
       </select>
-      <button class="primary" id="lookupBtn" type="submit">Look up</button>
-      <label class="goal-pick">Goal
-        <select id="globalGoal" title="Goal for every skill">
-          <option value="99">Level 99</option>
-          <option value="120">Level 120</option>
-          <option value="200m">200m XP</option>
-        </select>
-      </label>
-    </form>
-  </div>
-</header>
+    </label>
+  </form>
+</nav>
 
-<div class="wrap">
+<main>
   <p class="sub">Look up your RuneScape 3 stats, enter your XP/hour for each skill, and see how long until your goal.</p>
   <div id="status"></div>
 
-  <details class="manual panel">
-    <summary>Lookup not working? Paste your hiscores manually</summary>
-    <p>Open this link in a new tab, copy everything on the page, and paste it below:<br>
-      <a id="rawLink" href="#" target="_blank" rel="noopener"><code id="rawLinkText"></code></a></p>
-    <textarea id="manualInput" placeholder="1234,2898,5600000000&#10;..."></textarea>
-    <button type="button" id="manualBtn">Load pasted stats</button>
-    <p>Have your own CORS proxy (e.g. a Cloudflare Worker)? Enter its URL prefix; the hiscores URL is appended, URL-encoded.</p>
-    <input id="customProxy" placeholder="https://my-worker.example.workers.dev/?url=" style="width:100%">
+  <details class="manual section-box">
+    <summary class="section-box-header">Lookup not working? Paste your hiscores manually</summary>
+    <div class="section-box-content">
+      <p>Open this link in a new tab, copy everything on the page, and paste it below:<br>
+        <a id="rawLink" href="#" target="_blank" rel="noopener"><code id="rawLinkText"></code></a></p>
+      <textarea id="manualInput" placeholder="1234,2898,5600000000&#10;..."></textarea>
+      <button class="btn" type="button" id="manualBtn">Load pasted stats</button>
+      <p>Have your own CORS proxy (e.g. a Cloudflare Worker)? Enter its URL prefix; the hiscores URL is appended, URL-encoded.</p>
+      <input id="customProxy" placeholder="https://my-worker.example.workers.dev/?url=" style="width:100%">
+    </div>
   </details>
 
   <div id="results" hidden>
-    <div class="summary">
-      <div class="card panel hl"><div class="k">Player</div><div class="v" id="sumPlayer">–</div></div>
-      <div class="card panel"><div class="k">Skills at goal</div><div class="v" id="sumMaxed">–</div></div>
-      <div class="card panel"><div class="k">XP remaining</div><div class="v" id="sumRemaining">–</div></div>
-      <div class="card panel"><div class="k">Total time (rates entered)</div><div class="v" id="sumTime">–</div></div>
-      <div class="card panel">
-        <div class="k">Hours played per day</div>
-        <input id="hoursPerDay" type="number" min="0.5" max="24" step="0.5" value="4">
-        <div class="dim" id="sumDays" style="margin-top:4px"></div>
+    <div class="section-box">
+      <h2 class="section-box-header">Summary</h2>
+      <div class="section-box-content summary">
+        <div class="stat"><div class="k">Player</div><div class="v" id="sumPlayer">–</div></div>
+        <div class="stat"><div class="k">Skills at goal</div><div class="v" id="sumMaxed">–</div></div>
+        <div class="stat"><div class="k">XP remaining</div><div class="v" id="sumRemaining">–</div></div>
+        <div class="stat"><div class="k">Total time (rates entered)</div><div class="v" id="sumTime">–</div></div>
+        <div class="stat">
+          <div class="k">Hours played per day</div>
+          <input id="hoursPerDay" type="number" min="0.5" max="24" step="0.5" value="4">
+          <div class="dim" id="sumDays" style="margin-top:.25em"></div>
+        </div>
       </div>
     </div>
 
-    <div class="table-wrap panel">
-      <table>
-        <thead>
-          <tr>
-            <th data-sort="order">Skill</th>
-            <th data-sort="level" class="num">Level</th>
-            <th data-sort="xp" class="num">XP</th>
-            <th data-sort="pct">Progress</th>
-            <th data-sort="remaining" class="num">XP to goal</th>
-            <th class="num" data-sort="rate">XP / hour</th>
-            <th data-sort="hours" class="num">Hours left</th>
-            <th data-sort="hours" class="num">Days at <span id="hpdLabel">4</span>h/day</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <div class="section-box">
+      <h2 class="section-box-header">Skills</h2>
+      <div class="section-box-content table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="order">Skill</th>
+              <th data-sort="level" class="num">Level</th>
+              <th data-sort="xp" class="num">XP</th>
+              <th data-sort="pct">Progress</th>
+              <th data-sort="remaining" class="num">XP to goal</th>
+              <th class="num" data-sort="rate">XP / hour</th>
+              <th data-sort="hours" class="num">Hours left</th>
+              <th data-sort="hours" class="num">Days at <span id="hpdLabel">4</span>h/day</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
+</main>
 
-  <footer>
-    Data from the official RuneScape hiscores. Skill icons from the <a href="https://runescape.wiki">RuneScape Wiki</a>.
-    XP/hour rates are saved in your browser.
-  </footer>
-</div>
+<footer>
+  <p>Data from the official RuneScape hiscores. Skill icons and styling inspired by the <a href="https://runescape.wiki" target="_blank">RuneScape Wiki</a>.
+    XP/hour rates are saved in your browser.</p>
+</footer>
 
 <script>
 (() => {
@@ -370,14 +395,14 @@
       const hrs = hoursFor(r);
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td class="skill"><img src="https://runescape.wiki/images/${r.name}.png" alt="" onerror="this.remove()">${r.name}</td>
-        <td class="num">${r.level}</td>
-        <td class="num">${fmt(r.xp)}</td>
-        <td><span class="bar"><i style="width:${pct}%"></i></span><span class="pct">${pct.toFixed(pct >= 99.95 && !done ? 2 : 1)}%</span></td>
-        <td class="num">${done ? '<span class="maxed">Reached ✓</span>' : fmt(remaining)}</td>
+        <td class="skill"><img src="https://runescape.wiki/images/${r.name}.png" alt="" onerror="this.style.visibility='hidden'">${r.name}</td>
+        <td class="num mono">${r.level}</td>
+        <td class="num mono">${fmt(r.xp)}</td>
+        <td><span class="bar"><i style="width:${pct}%"></i></span><span class="pct mono">${pct.toFixed(pct >= 99.95 && !done ? 2 : 1)}%</span></td>
+        <td class="num mono">${done ? '<span class="maxed">Reached ✓</span>' : fmt(remaining)}</td>
         <td class="num">${done ? '<span class="dim">–</span>' : ""}</td>
-        <td class="num hours">${done ? '<span class="maxed">Done</span>' : fmtHours(hrs)}</td>
-        <td class="num days">${done ? "" : fmtDays(hrs / hpd)}</td>`;
+        <td class="num mono hours">${done ? '<span class="maxed">Done</span>' : fmtHours(hrs)}</td>
+        <td class="num mono days">${done ? "" : fmtDays(hrs / hpd)}</td>`;
 
       if (!done) {
         const rate = rates[r.name] || { v: "", u: "K" };
